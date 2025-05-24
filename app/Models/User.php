@@ -26,4 +26,25 @@ class User extends Authenticatable
         'password' => 'hashed',
     ];
 
+    public function transactions()
+    {
+        return $this->hasMany(Transaction::class);
+    }
+
+    public function balance()
+    {
+        return $this->hasOne(Balance::class);
+    }
+
+    public function getCurrentBalance()
+    {
+        return $this->balance ? $this->balance->amount : 0;
+    }
+
+    public function createInitialBalance()
+    {
+        if (!$this->balance) {
+            $this->balance()->create(['amount' => 1000000.00]);
+        }
+    }
 }
