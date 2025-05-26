@@ -8,8 +8,8 @@ databases:
 services:
   - type: web
     name: laravel-transaction-api
+    runtime: docker
     plan: free
-    dockerfilePath: ./Dockerfile
     healthCheckPath: "/api/v1/health"
     envVars:
       # Laravel Configuration
