@@ -8,6 +8,7 @@ use App\Jobs\ProcessTransactionJob;
 use App\Models\Balance;
 use App\Models\Transaction;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class TransactionController extends Controller
