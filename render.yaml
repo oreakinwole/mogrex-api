@@ -9,7 +9,7 @@ services:
   # Main Web Application
   - type: web
     name: laravel-transaction-api
-    runtime: php
+    env: php
     plan: free
     buildCommand: "./build.sh"
     startCommand: "./start.sh"
@@ -91,7 +91,7 @@ services:
   # Background Queue Worker
   - type: worker
     name: laravel-queue-worker
-    runtime: php
+    env: php
     plan: free
     buildCommand: "./build.sh"
     startCommand: "php artisan queue:work --verbose --tries=3 --timeout=90 --sleep=3 --max-time=3600"
