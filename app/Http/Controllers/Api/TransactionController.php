@@ -1,28 +1,48 @@
 <?php
-// app/Http/Controllers/Api/TransactionController.php
 
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\CreateTransactionRequest;
 use App\Jobs\ProcessTransactionJob;
 use App\Models\Balance;
 use App\Models\Transaction;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 
 class TransactionController extends Controller
 {
-    public function store(CreateTransactionRequest $request): JsonResponse
+    public function store(Request $request): JsonResponse
     {
+        $validator = Validator::make($request->all(), [
+            'amount' => 'required|numeric|min:0.01|max:999999999.99',
+            'type' => 'required|in:credit,debit',
+        ], [
+            'amount.required' => 'Amount is required',
+            'amount.numeric' => 'Amount must be a valid number',
+            'amount.min' => 'Amount must be greater than 0',
+            'amount.max' => 'Amount exceeds maximum limit',
+            'type.required' => 'Transaction type is required',
+            'type.in' => 'Transaction type must be either credit or debit',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
         try {
             DB::beginTransaction();
 
             $user = $request->user();
+            $amount = $request->input('amount');
+            $type = $request->input('type');
+
             $currentBalance = Balance::getCurrentBalance($user->id);
 
-            if ($request->type === 'debit' && $currentBalance < $request->amount) {
+            if ($type === 'debit' && $currentBalance < $amount) {
                 return response()->json([
                     'error' => 'Insufficient balance',
                     'current_balance' => number_format($currentBalance, 2)
@@ -31,16 +51,16 @@ class TransactionController extends Controller
 
             $transaction = Transaction::create([
                 'user_id' => $user->id,
-                'amount' => $request->amount,
-                'type' => $request->type,
+                'amount' => $amount,
+                'type' => $type,
                 'status' => 'pending',
             ]);
 
             ProcessTransactionJob::dispatch($transaction);
 
-            $projectedBalance = $request->type === 'credit'
-                ? $currentBalance + $request->amount
-                : $currentBalance - $request->amount;
+            $projectedBalance = $type === 'credit'
+                ? $currentBalance + $amount
+                : $currentBalance - $amount;
 
             DB::commit();
 
