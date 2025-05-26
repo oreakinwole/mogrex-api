@@ -4,16 +4,21 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\TransactionController;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
 Route::prefix('v1')->group(function () {
     // Public authentication routes
     Route::post('register', [AuthController::class, 'register']);
-    Route::post('login', [AuthController::class, 'login']);
+    Route::post('login', [AuthController::class, 'login'])->name('login');
+    Route::get('login', function () {
+    return Inertia::render('welcome');
+});
+
 
     // Protected routes
     Route::middleware('auth:sanctum')->group(function () {
         // Auth routes
-        Route::post('logout', [AuthController::class, 'logout']);
+        Route::post('logout', [AuthController::class, 'logout'])->name('logout');
         Route::get('me', [AuthController::class, 'me']);
 
         // Transaction routes
