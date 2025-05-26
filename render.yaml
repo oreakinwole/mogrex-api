@@ -4,20 +4,13 @@ databases:
     databaseName: laravel_transaction_api
     user: laravel_user
     plan: free
-    region: oregon
 
 services:
   - type: web
-    runtime: docker
     name: laravel-transaction-api
-    region: oregon
     plan: free
     dockerfilePath: ./Dockerfile
     healthCheckPath: "/api/v1/health"
-    disk:
-      name: laravel-storage
-      mountPath: /var/www/storage
-      sizeGB: 1
     envVars:
       # Laravel Configuration
       - key: APP_NAME
@@ -81,7 +74,7 @@ services:
       - key: SANCTUM_STATEFUL_DOMAINS
         value: "localhost,localhost:3000,127.0.0.1,127.0.0.1:8000,::1"
 
-      # Mail Configuration (Optional)
+      # Mail Configuration
       - key: MAIL_MAILER
         value: log
       - key: MAIL_HOST
@@ -98,9 +91,3 @@ services:
         value: "noreply@laravel-transaction-api.com"
       - key: MAIL_FROM_NAME
         value: "Laravel Transaction API"
-
-      # Performance
-      - key: OPCACHE_ENABLE
-        value: "1"
-      - key: OPCACHE_MEMORY_CONSUMPTION
-        value: "128"
