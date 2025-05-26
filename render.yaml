@@ -4,17 +4,22 @@ databases:
     databaseName: laravel_transaction_api
     user: laravel_user
     plan: free
+    region: oregon
 
 services:
-  # Main Web Application
   - type: web
+    runtime: docker
     name: laravel-transaction-api
-    env: php
+    region: oregon
     plan: free
-    buildCommand: "./build.sh"
-    startCommand: "./start.sh"
+    dockerfilePath: ./Dockerfile
     healthCheckPath: "/api/v1/health"
+    disk:
+      name: laravel-storage
+      mountPath: /var/www/storage
+      sizeGB: 1
     envVars:
+      # Laravel Configuration
       - key: APP_NAME
         value: "Laravel Transaction API"
       - key: APP_ENV
@@ -25,12 +30,14 @@ services:
         generateValue: true
       - key: APP_URL
         value: https://laravel-transaction-api.onrender.com
+
+      # Logging
       - key: LOG_CHANNEL
-        value: errorlog
-      - key: LOG_LEVEL
-        value: error
+        value: stack
       - key: LOG_DEPRECATIONS_CHANNEL
         value: "null"
+      - key: LOG_LEVEL
+        value: info
 
       # Database Configuration
       - key: DB_CONNECTION
@@ -56,7 +63,7 @@ services:
           name: laravel-transaction-db
           property: password
 
-      # Application Configuration
+      # Laravel Services
       - key: BROADCAST_DRIVER
         value: log
       - key: CACHE_DRIVER
@@ -70,13 +77,17 @@ services:
       - key: SESSION_LIFETIME
         value: "120"
 
-      # Mail Configuration
+      # Security
+      - key: SANCTUM_STATEFUL_DOMAINS
+        value: "localhost,localhost:3000,127.0.0.1,127.0.0.1:8000,::1"
+
+      # Mail Configuration (Optional)
       - key: MAIL_MAILER
-        value: smtp
+        value: log
       - key: MAIL_HOST
-        value: mailpit
+        value: smtp.mailtrap.io
       - key: MAIL_PORT
-        value: "1025"
+        value: "2525"
       - key: MAIL_USERNAME
         value: "null"
       - key: MAIL_PASSWORD
@@ -84,56 +95,12 @@ services:
       - key: MAIL_ENCRYPTION
         value: "null"
       - key: MAIL_FROM_ADDRESS
-        value: "hello@example.com"
+        value: "noreply@laravel-transaction-api.com"
       - key: MAIL_FROM_NAME
         value: "Laravel Transaction API"
 
-  # Background Queue Worker
-  - type: worker
-    name: laravel-queue-worker
-    env: php
-    plan: free
-    buildCommand: "./build.sh"
-    startCommand: "php artisan queue:work --verbose --tries=3 --timeout=90 --sleep=3 --max-time=3600"
-    envVars:
-      - key: APP_NAME
-        value: "Laravel Transaction API"
-      - key: APP_ENV
-        value: production
-      - key: APP_DEBUG
-        value: false
-      - key: APP_KEY
-        sync: false
-      - key: LOG_CHANNEL
-        value: errorlog
-      - key: LOG_LEVEL
-        value: error
-
-      # Database Configuration (same as web service)
-      - key: DB_CONNECTION
-        value: pgsql
-      - key: DB_HOST
-        fromDatabase:
-          name: laravel-transaction-db
-          property: host
-      - key: DB_PORT
-        fromDatabase:
-          name: laravel-transaction-db
-          property: port
-      - key: DB_DATABASE
-        fromDatabase:
-          name: laravel-transaction-db
-          property: database
-      - key: DB_USERNAME
-        fromDatabase:
-          name: laravel-transaction-db
-          property: user
-      - key: DB_PASSWORD
-        fromDatabase:
-          name: laravel-transaction-db
-          property: password
-
-      - key: QUEUE_CONNECTION
-        value: database
-      - key: CACHE_DRIVER
-        value: file
+      # Performance
+      - key: OPCACHE_ENABLE
+        value: "1"
+      - key: OPCACHE_MEMORY_CONSUMPTION
+        value: "128"
