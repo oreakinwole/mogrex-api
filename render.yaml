@@ -34,7 +34,7 @@ services:
 
       # Database Configuration
       - key: DB_CONNECTION
-        value: mysql
+        value: pgsql
       - key: DB_HOST
         fromDatabase:
           name: laravel-transaction-db
@@ -111,7 +111,7 @@ services:
 
       # Database Configuration (same as web service)
       - key: DB_CONNECTION
-        value: mysql
+        value: pgsql
       - key: DB_HOST
         fromDatabase:
           name: laravel-transaction-db
