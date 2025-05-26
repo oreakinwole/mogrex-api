@@ -1,78 +1,56 @@
+# Dockerfile - Simplified version if the main one still fails
+FROM composer:2.6 as composer-stage
+
+# Copy composer files
+COPY composer.json composer.lock ./
+
+# Install dependencies
+RUN composer install \
+    --no-scripts \
+    --no-autoloader \
+    --no-dev \
+    --no-interaction
+
+# Production stage
 FROM php:8.2-fpm-alpine
 
-# Install system dependencies
+# Install system dependencies and PHP extensions
 RUN apk add --no-cache \
     nginx \
     supervisor \
     postgresql-dev \
+    libzip-dev \
     zip \
     unzip \
-    git \
     curl \
-    libpng-dev \
-    libxml2-dev \
-    libzip-dev \
-    oniguruma-dev \
-    freetype-dev \
-    libjpeg-turbo-dev \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j$(nproc) \
-        pdo \
-        pdo_pgsql \
-        pgsql \
-        mbstring \
-        exif \
-        pcntl \
-        bcmath \
-        gd \
-        zip
+    && docker-php-ext-install pdo pdo_pgsql zip
 
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Create application directory
+# Set working directory
 WORKDIR /var/www
 
-# Copy composer files first for better caching
-COPY composer.json composer.lock ./
-
-# Install PHP dependencies
-RUN composer install --no-scripts --no-autoloader --no-dev --prefer-dist
+# Copy vendor from composer stage
+COPY --from=composer-stage /app/vendor ./vendor
 
 # Copy application code
 COPY . .
 
-# Install remaining dependencies and optimize
+# Generate autoloader
 RUN composer dump-autoload --optimize --no-dev
 
-# Create necessary directories and set permissions
-RUN mkdir -p /var/www/storage/logs \
-    && mkdir -p /var/www/storage/app/public \
-    && mkdir -p /var/www/storage/framework/cache/data \
-    && mkdir -p /var/www/storage/framework/sessions \
-    && mkdir -p /var/www/storage/framework/views \
-    && mkdir -p /var/www/bootstrap/cache \
-    && mkdir -p /run/nginx \
-    && mkdir -p /var/log/supervisor \
-    && chown -R www-data:www-data /var/www \
-    && chmod -R 755 /var/www/storage \
-    && chmod -R 755 /var/www/bootstrap/cache
+# Create directories and set permissions
+RUN mkdir -p storage/logs storage/framework/cache storage/framework/sessions storage/framework/views bootstrap/cache \
+    && chown -R www-data:www-data storage bootstrap/cache \
+    && chmod -R 755 storage bootstrap/cache
 
-# Copy configuration files
+# Copy configs
 COPY docker/nginx.conf /etc/nginx/http.d/default.conf
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-COPY docker/php-fpm.conf /usr/local/etc/php-fpm.d/www.conf
-
-# Copy startup script
 COPY docker/start.sh /usr/local/bin/start.sh
 RUN chmod +x /usr/local/bin/start.sh
 
-# Expose port
 EXPOSE 8080
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8080/api/v1/health || exit 1
-
-# Start the application
 CMD ["/usr/local/bin/start.sh"]
