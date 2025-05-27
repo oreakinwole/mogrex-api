@@ -1,4 +1,4 @@
-FROM php:8.3-fpm-alpine
+FROM php:8.2-fpm-alpine
 
 # Install system dependencies
 RUN apk add --no-cache \
@@ -9,6 +9,7 @@ RUN apk add --no-cache \
     unzip \
     git \
     curl \
+    icu-dev \
     libpng-dev \
     libxml2-dev \
     libzip-dev \
@@ -27,7 +28,8 @@ RUN apk add --no-cache \
         bcmath \
         gd \
         zip \
-        xsl
+        xsl \
+        intl
 
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
@@ -39,7 +41,7 @@ WORKDIR /var/www
 COPY composer.json composer.lock ./
 
 # Install PHP dependencies
-RUN COMPOSER_MEMORY_LIMIT=-1 composer install --no-scripts --no-autoloader --no-dev --prefer-dist --verbose
+RUN composer install --no-scripts --no-autoloader --no-dev --prefer-dist --verbose
 
 # Copy application code
 COPY . .
