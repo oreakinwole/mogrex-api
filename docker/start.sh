@@ -32,7 +32,7 @@ fi
 # Clear any existing cache
 echo "🧹 Clearing Laravel caches..."
 php artisan config:clear
-php artisan cache:clear
+# php artisan cache:clear
 php artisan view:clear
 php artisan route:clear
 
